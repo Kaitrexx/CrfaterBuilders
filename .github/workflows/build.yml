@@ -1,0 +1,38 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Layihəni aç
+        run: unzip -q CraftBuilders_APK_project.zip -d proj
+
+      - name: Ən yeni oyun faylını seç
+        run: |
+          GAME=$(ls Crafterbuilders*.html | sort -V | tail -n 1)
+          echo "İstifadə olunan oyun faylı: $GAME"
+          mkdir -p proj/app/src/main/assets
+          cp "$GAME" proj/app/src/main/assets/index.html
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: APK yığ
+        run: cd proj && gradle assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CrafterBuilders-APK
+          path: proj/app/build/outputs/apk/debug/*.apk
