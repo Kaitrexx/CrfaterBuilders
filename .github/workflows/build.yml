@@ -11,11 +11,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Layihəni aç
-        run: unzip -q CraftBuilders_APK_project.zip -d proj
+        run: unzip -q Cubeholm_APK_project.zip -d proj
 
       - name: Ən yeni oyun faylını seç
         run: |
-          GAME=$(ls Crafterbuilders*.html | sort -V | tail -n 1)
+          GAME=$(ls Cubeholm*.html 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$GAME" ]; then GAME=$(ls Crafterbuilders*.html | sort -V | tail -n 1); fi
           echo "İstifadə olunan oyun faylı: $GAME"
           mkdir -p proj/app/src/main/assets
           cp "$GAME" proj/app/src/main/assets/index.html
@@ -34,5 +35,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: CrafterBuilders-APK
+          name: Cubeholm-APK
           path: proj/app/build/outputs/apk/debug/*.apk
