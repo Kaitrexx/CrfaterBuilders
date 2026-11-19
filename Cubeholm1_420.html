@@ -337,11 +337,17 @@ console.warn( 'Scripts "build/three.js" and "build/three.min.js" are deprecated 
            🎤 = SOL tərəfdə, D-pad-in ÜSTÜNDƏ (minimap sağ tərəfdə top:60-dan başlayır, ona görə sağa qoyulmur).
            🔇 = yuxarı sağ sıraya əlavə. */
         #btn-voice{position:absolute;left:18px;bottom:194px;width:60px;height:60px;border-radius:50%;font-size:30px!important;line-height:1;background:rgba(90,90,90,.55);z-index:26;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
-        #btn-voice.ready{background:rgba(90,180,110,.6)}
-        #btn-voice.talk{background:rgba(80,230,110,.85);box-shadow:0 0 14px 4px rgba(80,255,120,.7),inset 0 0 0 2px #fff}
-        #btn-voice.off{background:rgba(90,90,90,.55);opacity:.7}
+        #btn-voice.ready{background:rgba(30,90,210,.85)!important;border-color:#8fc0ff!important;box-shadow:0 0 0 calc(var(--lvl,0)*16px) rgba(143,192,255,.55),inset 0 0 0 2px rgba(255,255,255,.35)}
+        #btn-voice.talk{background:rgba(40,220,90,.95)!important;border-color:#fff!important;box-shadow:0 0 0 calc(var(--lvl,0)*16px) rgba(120,255,150,.6),0 0 18px 6px rgba(80,255,120,.8),inset 0 0 0 2px #fff;animation:vcPulse .7s ease-in-out infinite alternate}
+        #btn-voice.off{background:rgba(190,40,40,.9)!important;border-color:#ff9a9a!important;opacity:1}
         #btn-voice.err{background:rgba(200,60,60,.85)}
+        @keyframes vcPulse{from{transform:scale(1)}to{transform:scale(1.1)}}
+        /* [#VOICE_CHAT] 1_420: düymənin altında dayanıqlı vəziyyət yazısı (OFF / HOLD / LIVE) + üstündən xətt (söndürülübsə) */
+        #btn-voice::after{content:attr(data-lbl);position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);font:14px 'VT323',monospace;line-height:1;padding:1px 5px;background:rgba(0,0,0,.75);color:#fff;border-radius:3px;white-space:nowrap;pointer-events:none}
+        #btn-voice.off::before{content:'';position:absolute;left:12%;right:12%;top:50%;height:4px;background:#fff;transform:rotate(-45deg);border-radius:2px;pointer-events:none}
         #btn-voice-toggle{background:rgba(60,140,255,.5)}
+        #btn-voice-toggle.vc-on{background:rgba(40,180,80,.85)!important;border-color:#b6ffc6!important}
+        #btn-voice-toggle.vc-off{background:rgba(190,40,40,.9)!important;border-color:#ff9a9a!important}
         #voice-quick{position:absolute;left:18px;bottom:262px;width:min(230px,54vw);z-index:120;background:rgba(8,4,24,.96);border:2px solid #a58cf0;color:#fff;padding:6px;font:16px 'VT323',monospace;pointer-events:auto;touch-action:none}
         #voice-quick .vq-row{display:flex;align-items:center;gap:6px;margin:3px 0}
         #voice-quick .vq-row span{flex:1}
@@ -21885,6 +21891,14 @@ ru: ['ДОСТИЖЕНИЯ', '🏆 Достижение открыто: ', 'До
                     elSpeak.style.display = show ? 'block' : 'none';
                     if (show) elSpeak.textContent = '🎤 ' + names.join(', ');
                 }
+                // 1_420: mikrofon səviyyəsi — danışanda düymənin ətrafında halqa böyüyür (mikrofonun işlədiyini göstərir)
+                if (elMic && VOICE.on && VOICE.push && VOICE.analyser && VOICE.buf) {
+                    try {
+                        VOICE.analyser.getByteTimeDomainData(VOICE.buf);
+                        let sm = 0; for (let i = 0; i < VOICE.buf.length; i++) { const x = (VOICE.buf[i] - 128) / 128; sm += x * x; }
+                        elMic.style.setProperty('--lvl', Math.min(1, Math.sqrt(sm / VOICE.buf.length) * 6).toFixed(2));
+                    } catch (e) { dbgE(e); }
+                }
                 // səslə aktivləşdirmə
                 if (VOICE.mode === 'voice' && VOICE.analyser && VOICE.buf && VOICE.on) {
                     try {
@@ -21905,10 +21919,12 @@ ru: ['ДОСТИЖЕНИЯ', '🏆 Достижение открыто: ', 'До
             function vcSyncUI() {
                 if (elMic) {
                     elMic.className = 'pe-btn ' + (!VOICE.on ? 'off' : VOICE.push ? 'talk' : 'ready');
+                    elMic.dataset.lbl = !VOICE.on ? 'OFF' : VOICE.push ? 'LIVE' : (VOICE.mode === 'voice' ? 'AUTO' : VOICE.latch ? 'TAP' : 'HOLD');
+                    if (!VOICE.on || !VOICE.push) elMic.style.removeProperty('--lvl');
                     const lab = VOICE.on ? i18n('vcOn') : i18n('vcOff');
                     elMic.setAttribute('aria-label', lab);
                 }
-                if (elToggle) elToggle.innerHTML = VOICE.on ? '&#128266;' : '&#128263;';
+                if (elToggle) { elToggle.innerHTML = VOICE.on ? '&#128266;' : '&#128263;'; elToggle.classList.toggle('vc-on', !!VOICE.on); elToggle.classList.toggle('vc-off', !VOICE.on); }
                 const set = (id, tx) => { const el = $v(id); if (el && el.textContent !== tx) el.textContent = tx; };
                 set('btn-voice-enable', VOICE.on || VOICE.wantedOn ? i18n('vcOnLbl') : i18n('vcOffLbl'));
                 set('btn-voice-mode', VOICE.mode === 'ptt' ? i18n('vcModePtt') : VOICE.mode === 'voice' ? i18n('vcModeVoice') : i18n('vcModeAlways'));
